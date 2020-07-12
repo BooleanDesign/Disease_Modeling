@@ -5,7 +5,7 @@ Written by Nathan Diggins
 
 import numpy as np
 import matplotlib.pyplot as plt
-import SpreadLib as s
+import Library as s
 
 """
 Base Functions
@@ -25,16 +25,18 @@ def simulate(infection, simulation_space):
         # We now iterate over all of the objects in the simulation space
         for receiver in simulation_space.objects[simulation_space.objects.index(transmitter):]:
             # This matches each transmitter with each receiver exactly once.
-            if s.distance(transmitter, receiver) < infection.radius:
+            if s.distance(transmitter, receiver) < infection.transmittance_radius and transmitter in simulation_space and receiver in simulation_space:
                 """
                 Now we know if the two objects are within the necessary distance.
                 """
                 if type(transmitter) == s.Infected and type(
-                        receiver) == s.Susceptible and np.random.uniform() <= infection.transmittance:
-                    receiver.infect(infection)
+                        receiver) == s.Susceptible and np.random.uniform() <= infection.transmittance(s.distance(transmitter,receiver)):
+                    print("Receiver %s was exposed"%(receiver))
+                    receiver.expose(infection,s.distance(transmitter,receiver))
                 elif type(transmitter) == s.Susceptible and type(
-                        receiver) == s.Infected and np.random.uniform() <= infection.transmittance:
-                    transmitter.infect(infection)
+                        receiver) == s.Infected and np.random.uniform() <= infection.transmittance(s.distance(transmitter,receiver)):
+                    print("Transmitter %s was exposed"%(transmitter))
+                    transmitter.expose(infection,s.distance(transmitter,receiver))
                 else:
                     pass
             else:
@@ -45,7 +47,9 @@ def simulate(infection, simulation_space):
 
     infecteds = [i for i in simulation_space.objects if type(i) == s.Infected]
     for object in infecteds:
-        if object.infected_time >= infection.time:
+        if np.random.uniform() <= (infection.death_rate/infection.time):
+            object.kill()
+        elif object.infected_time >= infection.time:
             # Clearly the object needs to be cured.
             object.cure()
         else:
@@ -63,7 +67,7 @@ def simulate(infection, simulation_space):
 
 
 sim_space = s.Simulation_Space()
-sick = s.Infection(0.5,0.1,240)
+sick = s.Infection(500,0.5,0.2)
 sim_space.populate([s.Susceptible(tuple(np.random.uniform(0.0-(sim_space.size[0]/2.0),0.0+(sim_space.size[0]/2.0),2)),
                                   direction=np.random.uniform(-np.pi,np.pi)) for i in range(50)])
 sim_space.populate(s.Infected((1,1)))
